@@ -66,7 +66,7 @@
       position: absolute;
       width: 30px;
       height: 30px;
-      background-image: url("https://cdn-icons-png.flaticon.com/512/609/609803.png");
+      background-image: url("https://previews.123rf.com/images/doomu/doomu1502/doomu150200087/37044817-chrome-rob%C3%B3tica-garra-sobre-un-fondo-blanco.jpg");
       background-size: cover;
       pointer-events: none;
     }
@@ -75,6 +75,15 @@
       font-size: 20px;
       border: 2px dashed #aaa;
       padding: 10px;
+    }
+    @keyframes capturaAnimacion {
+      0% { transform: translateY(0); }
+      50% { transform: translateY(80px); }
+      100% { transform: translateY(0); }
+    }
+    
+    .garra-animando {
+      animation: capturaAnimacion 2s ease-in-out;
     }
   </style>
 </head>
@@ -116,6 +125,8 @@
 
   <script type="module">
     import { MaquinaCazaMunecos } from '../negocio/negocio.js';
+    
+    
 
     document.addEventListener('DOMContentLoaded', () => {
       const garra = document.getElementById('garra');
@@ -128,6 +139,26 @@
       let x = 185;
       let y = 185;
 
+      document.addEventListener('keydown', (event) => {
+        switch (event.key) {
+          case 'ArrowUp':
+            mover('arriba');
+            break;
+          case 'ArrowDown':
+            mover('abajo');
+            break;
+          case 'ArrowLeft':
+            mover('izquierda');
+            break;
+          case 'ArrowRight':
+            mover('derecha');
+            break;
+          case ' ':
+          case 'Enter':
+            atrapar();
+            break;
+        }
+      });
       function actualizarUI(mensaje) {
         const estadoActual = maquina.estadoGeneral();
         estado.textContent = `Estado: ${mensaje}`;
@@ -177,12 +208,23 @@
       }
 
       function atrapar() {
-        const id = obtenerIdAreaPorCoordenadas(x, y);
-        const resultado = maquina.intentarCaptura(id);
-        if (resultado.exito) {
-          ganadosSpan.textContent += ` ${resultado.muneco}`;
-        }
-        actualizarUI(resultado.mensaje);
+        const garra = document.getElementById('garra');
+      
+        // Agregar animación
+        garra.classList.add('garra-animando');
+      
+        // Quitar animación después que termine (500ms)
+        setTimeout(() => {
+          garra.classList.remove('garra-animando');
+      
+          const id = obtenerIdAreaPorCoordenadas(x, y);
+          const resultado = maquina.intentarCaptura(id);
+      
+          if (resultado.exito) {
+            ganadosSpan.textContent += ` ${resultado.muneco}`;
+          }
+          actualizarUI(resultado.mensaje);
+        }, 2000); // Tiempo sincronizado con la duración de la animación
       }
 
       function actualizarAreasVisuales() {
@@ -190,17 +232,55 @@
         estadoMaquina.areas.forEach(area => {
           const div = document.getElementById(`area${area.id}`);
           if (div) {
-            div.textContent = `Área ${area.id}\n${area.estado === 'CON_MUNECO' ? area.muneco : 'Vacía'}`;
+            div.textContent = `Área ${area.id}`; // Texto encima
+      
+            if (area.estado === 'CON_MUNECO' && area.muneco) {
+              div.style.backgroundImage = `url('${obtenerImagenDeMuneco(area.muneco)}')`;
+              div.style.backgroundSize = 'cover';
+              div.style.backgroundPosition = 'center';
+              div.style.color = 'black'; // Para que el texto se lea sobre la imagen
+            } else {
+              div.style.backgroundImage = 'none';
+              div.style.backgroundColor = '#7c2d1c'; // Fondo neutro cuando no hay muñeco
+              div.style.color = 'black';
+            }
           }
         });
       }
+      
+      function obtenerImagenDeMuneco(nombre) {
+        const mapaImagenes = {
+          'Stitch': 'https://www.mi-peluche.com/wp-content/uploads/sites/4/2024/07/IMG_Grande-peluche-Stitch-Peluche-Stitch_1.jpeg',
+          'Hámster': 'https://m.media-amazon.com/images/I/71YxyW+hfLL.jpg',
+          'Minnie': 'https://minisocol.vtexassets.com/arquivos/ids/267126-800-800?v=638736287234500000&width=800&height=800&aspect=true',
+          'Freddy': 'https://w7.pngwing.com/pngs/802/959/png-transparent-five-nights-at-freddy-s-2-five-nights-at-freddy-s-4-five-nights-at-freddy-s-sister-location-stuffed-animals-cuddly-toys-stuffed-photography-doll-action-toy-figures-thumbnail.png'
+        };
+        return mapaImagenes[nombre] || 'https://cdn-icons-png.flaticon.com/512/565/565547.png'; // Por defecto
+      }
 
       // Eventos
-      document.getElementById('btnMoneda').addEventListener('click', insertarMoneda);
-      document.getElementById('btnArriba').addEventListener('click', () => mover('arriba'));
-      document.getElementById('btnAbajo').addEventListener('click', () => mover('abajo'));
-      document.getElementById('btnIzquierda').addEventListener('click', () => mover('izquierda'));
-      document.getElementById('btnDerecha').addEventListener('click', () => mover('derecha'));
+      document.getElementById('btnMoneda').addEventListener('click', (e) => {
+        insertarMoneda();
+        e.target.blur(); // Permite que el boton solo se oprima con el click
+      });
+      document.getElementById('btnArriba').addEventListener('click', (e) => {
+        mover('arriba')
+        e.target.blur();
+    
+      });
+      document.getElementById('btnAbajo').addEventListener('click', (e) => {
+        mover('abajo');
+        e.target.blur();
+      });
+      document.getElementById('btnIzquierda').addEventListener('click', (e) => {
+        mover('izquierda');
+        e.target.blur();
+      });
+        
+      document.getElementById('btnDerecha').addEventListener('click', (e) => {
+        mover('derecha');
+        e.target.blur();
+      });
       document.getElementById('btnAtrapar').addEventListener('click', atrapar);
 
       // Inicialización
