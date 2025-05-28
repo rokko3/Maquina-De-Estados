@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Máquina Caza Muñecos</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f7f7f7;
+      text-align: center;
+      padding: 20px;
+      background: linear-gradient(to bottom, #89f7fe,#66a6ff);
+    }
+    .estado {
+      background-color: #e8f1fa;
+      padding: 10px;
+      margin: 10px auto;
+      width: fit-content;
+      border-radius: 8px;
+    }
+    .contenedor-juego {
+      display: flex;
+      justify-content: center;
+      align-items: center; 
+      gap: 30px;
+      margin-top: 30px;
+    }
+
+    .maquina {
+     width: 600px;
+     height: 400px;
+     display: grid;
+    grid-template-areas:
+    "salida area0 area1"
+    "salida area2 area3";
+     grid-template-columns: 130px 1fr 1fr;
+     grid-template-rows: 1fr 1fr;
+     gap: 4px;
+     border: 2px solid #ccc;
+     background: white;
+     position: relative;
+    }
+    #area4 { grid-area: salida; }
+    #area0 { grid-area: area0; }
+    #area1 { grid-area: area1; }
+    #area2 { grid-area: area2; }
+    #area3 { grid-area: area3; }
+
+
+
+    .controles {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .controles button {
+      margin: 5px;
+      padding: 10px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    
+    .area {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #ccc;
+      font-weight: bold;
+      font-size: 16px;
+      white-space: pre-wrap;
+    }
+    .garra {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      background-image: url("https://previews.123rf.com/images/doomu/doomu1502/doomu150200087/37044817-chrome-rob%C3%B3tica-garra-sobre-un-fondo-blanco.jpg");
+      background-size: cover;
+      pointer-events: none;
+    }
+    .ganados {
+      margin-top: 30px;
+      font-size: 20px;
+      border: 2px dashed #aaa;
+      padding: 10px;
+    }
+    .area.salida {
+     background-color: #a8b9c5;
+     display: flex;
+     flex-direction: column;
+     justify-content: center;
+     align-items: center;
+     font-size: 16px;
+     font-weight: bold;
+     padding: 5px;
+     overflow: hidden;
+     text-align: center;
+    }
+
+    .area.salida img {
+      max-width: 100%;
+      max-height: 80px;
+     object-fit: contain;
+     margin-top: 5px;
+    }
+
+
+  </style>
+</head>
+<body>
+  <h1>🎯 Máquina Caza Muñecos</h1>
+  <div class="estado" id="estado">Estado: Esperando moneda</div>
+  <div>
+    <strong>Crédito:</strong> <span id="credito">0</span> |
+    <strong>Intentos:</strong> <span id="intentos">0</span><br>
+    <button id="btnMoneda">Insertar Moneda</button>
+    <button id="btnLlenar">Llenar Máquina</button>
+  </div>
+
+<div class="contenedor-juego">
+  <div class="maquina" id="maquina">
+    <div class="area salida" id="area4">🎁 Salida</div>
+    <div class="area" id="area0"></div>
+    <div class="area" id="area1"></div>
+    <div class="area" id="area2"></div>
+    <div class="area" id="area3"></div>
+    <div class="garra" id="garra"></div>
+  </div>
+  
+  
+
+  <div class="controles">
+    <div>
+      <button id="btnArriba">⬆️</button>
+    </div>
+    <div>
+      <button id="btnIzquierda">⬅️</button>
+      <button id="btnAtrapar">🎯</button>
+      <button id="btnDerecha">➡️</button>
+    </div>
+    <div>
+      <button id="btnAbajo">⬇️</button>
+    </div>
+  </div>
+</div>
+  <div class="ganados">
+    Ganaste: <span id="ganados"></span>
+  </div>
+
+  <script type="module">
+    import { MaquinaCazaMunecos } from '../negocio/negocio.js';
+    document.addEventListener('DOMContentLoaded', () => {
+      const garra = document.getElementById('garra');
+      const estado = document.getElementById('estado');
+      const creditoSpan = document.getElementById('credito');
+      const intentosSpan = document.getElementById('intentos');
+      const ganadosSpan = document.getElementById('ganados');
+
+      const maquina = new MaquinaCazaMunecos();
+      let x = 185;
+      let y = 185;
+
+      // === LISTENER DE TECLADO ===
+      document.addEventListener('keydown', (event) => {
+        switch (event.code) {
+          case 'ArrowUp':
+            event.preventDefault();
+            mover('arriba');
+            break;
+          case 'ArrowDown':
+            event.preventDefault();
+            mover('abajo');
+            break;
+          case 'ArrowLeft':
+            event.preventDefault();
+            mover('izquierda');
+            break;
+          case 'ArrowRight':
+            event.preventDefault();
+            mover('derecha');
+            break;
+          case 'Space':
+          case 'Enter':
+            event.preventDefault();
+            atrapar();
+            break;
+        }
+      });
+
+      function actualizarUI(mensaje) {
+        const estadoActual = maquina.estadoGeneral();
+        estado.textContent = `Estado: ${mensaje}`;
+        creditoSpan.textContent = estadoActual.credito;
+        intentosSpan.textContent = estadoActual.intentosRestantes;
+        actualizarGarra();
+        actualizarAreasVisuales();
+      }
+
+      function insertarMoneda() {
+        maquina.insertarMoneda();
+        actualizarUI("Moneda insertada y áreas recargadas");
+      }
+
+      function llenarMaquina() {
+        maquina.recargarAreas();
+        actualizarUI("Máquina llenada con peluches");
+      }
+
+      function mover(direccion) {
+        const paso = 10;
+        if (direccion === 'arriba' && y - paso >= 0) y -= paso;
+        if (direccion === 'abajo' && y + paso <= 370) y += paso;
+        if (direccion === 'izquierda' && x - paso >= 130) x -= paso;
+        if (direccion === 'derecha' && x + paso <= 570) x += paso;
+        actualizarGarra();
+      }
+
+      function actualizarGarra() {
+        garra.style.left = x + 'px';
+        garra.style.top = y + 'px';
+      }
+      
+      function atrapar() {
+        const resultado = maquina.intentarCapturaPorCoordenadas(x, y);
+        if (resultado.exito) {
+          ganadosSpan.textContent += ` ${resultado.muneco}`;
+        }
+        actualizarUI(resultado.mensaje);
+      }
+
+      function actualizarAreasVisuales() {
+        const estadoMaquina = maquina.estadoGeneral();
+        estadoMaquina.areas.forEach(area => {
+          const div = document.getElementById(`area${area.id}`);
+          if (div) {
+            div.textContent = `Área ${area.id}`;
+            if (area.estado === 'CON_MUNECO' && area.muneco) {
+              div.style.backgroundImage = `url('${obtenerImagenDeMuneco(area.muneco)}')`;
+              div.style.backgroundSize = 'cover';
+              div.style.backgroundPosition = 'center';
+              div.style.color = 'black';
+            } else {
+              div.style.backgroundImage = 'none';
+              div.style.backgroundColor = '#3ddbc4';
+              div.style.color = 'black';
+            }
+          }
+        });
+
+        const salida = estadoMaquina.salida;
+        const divSalida = document.getElementById('area4');
+        if (divSalida) {
+          divSalida.innerHTML = '🎁 Salida';
+          if (salida && salida !== 'Vacío') {
+            const img = document.createElement('img');
+            img.src = obtenerImagenDeMuneco(salida);
+            img.alt = salida;
+            divSalida.appendChild(img);
+          }
+        }
+      }
+
+      function obtenerImagenDeMuneco(nombre) {
+        const mapaImagenes = {
+          'Stitch': 'https://www.mi-peluche.com/wp-content/uploads/sites/4/2024/07/IMG_Grande-peluche-Stitch-Peluche-Stitch_1.jpeg',
+          'Hámster': 'https://m.media-amazon.com/images/I/71YxyW+hfLL.jpg',
+          'Minnie': 'https://minisocol.vtexassets.com/arquivos/ids/267126-800-800?v=638736287234500000&width=800&height=800&aspect=true',
+          'Freddy': 'https://w7.pngwing.com/pngs/802/959/png-transparent-five-nights-at-freddy-s-2-five-nights-at-freddy-s-4-five-nights-at-freddy-s-sister-location-stuffed-animals-cuddly-toys-stuffed-photography-doll-action-toy-figures-thumbnail.png'
+        };
+        return mapaImagenes[nombre] || 'https://cdn-icons-png.flaticon.com/512/565/565547.png';
+      }
+
+      // === EVENTOS DE BOTONES ===
+      document.getElementById('btnLlenar').addEventListener('click', (e) => {
+        llenarMaquina();
+        e.target.blur();
+      });
+
+      document.getElementById('btnMoneda').addEventListener('click', (e) => {
+        insertarMoneda();
+        e.target.blur();
+      });
+
+      document.getElementById('btnArriba').addEventListener('click', (e) => {
+        mover('arriba');
+        e.target.blur();
+      });
+
+      document.getElementById('btnAbajo').addEventListener('click', (e) => {
+        mover('abajo');
+        e.target.blur();
+      });
+
+      document.getElementById('btnIzquierda').addEventListener('click', (e) => {
+        mover('izquierda');
+        e.target.blur();
+      });
+
+      document.getElementById('btnDerecha').addEventListener('click', (e) => {
+        mover('derecha');
+        e.target.blur();
+      });
+
+      document.getElementById('btnAtrapar').addEventListener('click', (e) => {
+        atrapar(); // CORREGIDO
+        e.target.blur();
+      });
+
+      // === INICIALIZACIÓN ===
+      actualizarUI("Esperando moneda");
+});
+
+    
+    
+  </script>
+</body>
+</html>
